@@ -1,1 +1,1 @@
-pip install pfse_starterkit
+pfse_starterkit
