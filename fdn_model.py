@@ -4,7 +4,7 @@ from PyNite import FEModel3D
 from PyNite.Visualization import render_model
 import numpy as np
 
-def grade_beam( name: str,
+def grade_beam( mat: str,
                 L: float,
                 w: float,
                 E: float,  
@@ -28,7 +28,7 @@ def grade_beam( name: str,
     G = E/(2*(1+nu))
 
     model = FEModel3D() # Creates an empty model
-    model.add_material(name, E, G, nu, rho)
+    model.add_material(mat, E, G, nu, rho)
     
     # Add nodes to the model
     dx = L / n_springs
@@ -46,14 +46,14 @@ def grade_beam( name: str,
         model.def_support_spring(name, dof='DY', stiffness=spring_stiffness, direction='-') 
 
     # Add elements to the nodes
-    model.add_member(name="M1", i_node="node1", j_node=name, material="Concrete", Iy=Iy, Iz=Iz, J=J, A=A)
+    model.add_member(name="M1", i_node="node1", j_node=name, material=mat, Iy=Iy, Iz=Iz, J=J, A=A)
 
     model.add_load_combo(name="LC", factors={"LC": 1})
     
     for mem in ["M1"]:
-        model.add_member_pt_load(Member=mem, Direction="FY", P=12100 , x=250, case="LC")
-        model.add_member_pt_load(Member=mem, Direction="MZ", P=11.9*0.75*1e6 , x=250, case="LC")
-        model.add_member_pt_load(Member=mem, Direction="FY", P=-2200 , x=2750, case="LC")
-        model.add_member_dist_load(Member=mem, Direction="FY", w1=-12.5, w2=-12.5, x1=0, x2=3000, case="LC") 
+        model.add_member_pt_load(Member=mem, Direction="FY", P=12100 , x=L/10, case="LC")
+        model.add_member_pt_load(Member=mem, Direction="MZ", P=11.9*0.75*1e6 , x=L/2, case="LC")
+        model.add_member_pt_load(Member=mem, Direction="FY", P=-2200 , x=4*L/3, case="LC")
+        model.add_member_dist_load(Member=mem, Direction="FY", w1=-12.5, w2=-12.5, x1=L/3, x2=L, case="LC") 
     
     return model, nodes
