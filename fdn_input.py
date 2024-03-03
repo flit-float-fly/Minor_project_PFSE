@@ -1,6 +1,6 @@
 import math
 from PyNite import FEModel3D
-from PyNite.Visualization import render_model
+# from PyNite.Visualization import render_model
 from rich import print
 import pandas as pd
 import matplotlib.pyplot as plt

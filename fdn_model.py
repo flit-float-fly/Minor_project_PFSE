@@ -1,7 +1,7 @@
 import math
 from rich import print
 from PyNite import FEModel3D
-from PyNite.Visualization import render_model
+# from PyNite.Visualization import render_model
 import numpy as np
 
 def grade_beam( mat: str,
