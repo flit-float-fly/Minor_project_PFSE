@@ -7,37 +7,55 @@ import matplotlib.pyplot as plt
 import fdn_model as fdn
 import streamlit as st
 import plotly.graph_objects as go
+# from eng_module.utils import convert_to_numeric
 
 st.header("Gradebeam Supported on Springs")
-st.subheader("Keep units consistent")
 
-# Ask the user to input a list of subgrade moduli for analysis
-subgrade_txt = st.text_input("Enter a list of subgrade moduli you would like to test, separated by commas:")
+beam_expander = st.expander(label="Input for beam")
+with beam_expander:
+    st.subheader("Input values for different types of loads, separate with commas")
+    UDL_txt = st.text_input("Define UDL: UDL_start, UDL_end, x_start, x_end (+ = down)",
+                            value = "10, 15, 0, 10000")
+    point_list = st.text_input("List of point loads (+ = down)",
+                               value = "1000, 5200")
+    point_loc_list = st.text_input("corresponding location(s) on beam (0 = left end)",
+                                   value = "5000, 7500")
+    subgrade_txt = st.text_input("Enter a list of subgrade moduli you would like to test",
+                                  value="0.1, 1, 5")
 
-# Convert the input string to a list of floats
-try:
-    subgrade_mod = [float(num.strip()) for num in subgrade_txt.split(",")]
-    st.write("These are the subgrade moduli you would like to run through:", subgrade_mod)
-except ValueError:
-    st.write("Please enter a valid list of numbers separated by commas.")
+    # Convert the input strings to a list of floats
+    inputs = {"UDL": UDL_txt, 
+              "point_loads": point_list,
+              "point_locations": point_loc_list,
+              "subgrade_mods": subgrade_txt} 
+    
+    for name, values in inputs.items():
+        try:
+            input_converted = [float(num.strip()) for num in values.split(",")]
+            # st.write(f"{name}:", input_converted)
+            inputs[name] = input_converted #overwrite dict with new values
+        except ValueError:
+            st.write(f"Please enter a valid list for {name}")
 
 # User to choose number of springs to be supporting the grade beam
 n_springs = st.number_input("Enter the number of spring supports along length of beam", value=10)
 
 # User can input material and beam properties in the sidebar 
-st.sidebar.subheader("Input Parameters")
+st.sidebar.subheader("Member Parameters; Units = N,mm")
 mat_name = st.sidebar.text_input("Input Material Name", value="Concrete")
-L = st.sidebar.number_input("Beam Length", value=10000, format="%.2e")
-w = st.sidebar.number_input("Beam Width", value=200, format="%.2e")
-h = st.sidebar.number_input("Beam Height", value=800, format="%.2e")
-E = st.sidebar.number_input("Elastic Modulus", value=24648, format="%.2e")
-Iz = st.sidebar.number_input("Moment of Inertia (z)", value=w*h**3/12, format="%.2e")
-Iy = st.sidebar.number_input("Moment of Inertia (y)", value=h*w**3/12, format="%.2e")
-nu = st.sidebar.number_input("Poisson's Ratio", value=0.2, format="%.2e")
-rho = st.sidebar.number_input("Material Specific Weight", value=1e-3, format="%.2e")
-J = st.sidebar.number_input("Polar Moment of Inertia", value=1.0, format="%.2e")
+L = st.sidebar.number_input("Beam Length (mm)", value=10000)
+w = st.sidebar.number_input("Beam Width (mm)", value=200)
+h = st.sidebar.number_input("Beam Height (mm)", value=800)
+E = st.sidebar.number_input("Elastic Modulus (MPa)", value=24648)
+Iz = st.sidebar.number_input("Moment of Inertia-z (mm4)", value=w*h**3/12)
+Iy = st.sidebar.number_input("Moment of Inertia-y (mm4)", value=h*w**3/12)
+nu = st.sidebar.number_input("Poisson's Ratio", value=0.2, format="%.2f")
+rho = st.sidebar.number_input("Material Specific Weight (N/mm3)", value=1e-6, format="%.6e")
+J = st.sidebar.number_input("Polar Moment of Inertia (mm3)", value=1.0)
 
-# build the beam_ppts that are 
+# Create tuples from point loads and locations
+point_list = list(zip(inputs["point_loads"], inputs["point_locations"]))
+
 beam_ppts = {   "mat": mat_name,
                 "L": L,
                 "w": w,
@@ -50,10 +68,11 @@ beam_ppts = {   "mat": mat_name,
                 "J": J
             }
 
-# Run the simulations based on the list of subgrade moduli given
+#loop through differnt subgrade moduli
 Fy_rxns_dict = {}
-for mod in subgrade_mod:
-    FBD_model, nodes = fdn.grade_beam(**beam_ppts, subgrade_modulus=mod, n_springs=n_springs)
+for mod in inputs["subgrade_mods"]:
+    FBD_model, nodes = fdn.grade_beam(**beam_ppts, subgrade_modulus=mod, n_springs=n_springs,
+                                       UDL=inputs["UDL"], pt_loads=point_list)
     FBD_model.analyze() # Changes the model by performing the analysis and adding analysis results
     
     Fy_rxns = [] #populate reactions for each mod

@@ -15,7 +15,9 @@ def grade_beam( mat: str,
                 rho: float, 
                 J: float, 
                 subgrade_modulus: float,
-                n_springs: float
+                n_springs: float,
+                UDL: list[float],
+                pt_loads: list[tuple]
               ) -> FEModel3D:
     """
     Build and return an FE Model to be analyzed and post-processed that represents a beam supported by n
@@ -50,10 +52,8 @@ def grade_beam( mat: str,
 
     model.add_load_combo(name="LC", factors={"LC": 1})
     
-    for mem in ["M1"]:
-        model.add_member_pt_load(Member=mem, Direction="FY", P=12100 , x=L/10, case="LC")
-        model.add_member_pt_load(Member=mem, Direction="MZ", P=11.9*0.75*1e6 , x=L/2, case="LC")
-        model.add_member_pt_load(Member=mem, Direction="FY", P=-2200 , x=4*L/3, case="LC")
-        model.add_member_dist_load(Member=mem, Direction="FY", w1=-12.5, w2=-12.5, x1=L/3, x2=L, case="LC") 
-    
+    model.add_member_dist_load(Member="M1", Direction="FY", w1=-UDL[0], w2=-UDL[1], x1=UDL[2], x2=UDL[3], case="LC") 
+    for pt in pt_loads:
+        model.add_member_pt_load(Member="M1", Direction="FY", P=-pt[0] , x=pt[1], case="LC")
+
     return model, nodes
