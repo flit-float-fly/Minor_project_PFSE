@@ -35,7 +35,7 @@ def grade_beam( mat: str,
     # Add nodes to the model
     dx = L / n_springs
     spring_stiffness = subgrade_modulus * w * dx
-    print(f"{spring_stiffness = :0.2f}")
+    print(f"{spring_stiffness = :0.2f}N/mm")
     x_coords = [i for i in np.linspace(0, L, n_springs)]
     nodes = []
     node_id = 0
@@ -49,9 +49,9 @@ def grade_beam( mat: str,
 
     # Add elements to the nodes
     model.add_member(name="M1", i_node="node1", j_node=name, material=mat, Iy=Iy, Iz=Iz, J=J, A=A)
-
+    # Add a load combo
     model.add_load_combo(name="LC", factors={"LC": 1})
-    
+    # Add Distributed and Point loads
     model.add_member_dist_load(Member="M1", Direction="FY", w1=-UDL[0], w2=-UDL[1], x1=UDL[2], x2=UDL[3], case="LC") 
     for pt in pt_loads:
         model.add_member_pt_load(Member="M1", Direction="FY", P=-pt[0] , x=pt[1], case="LC")
