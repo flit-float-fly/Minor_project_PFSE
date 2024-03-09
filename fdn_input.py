@@ -16,13 +16,13 @@ with beam_expander:
     st.subheader("Input values for different types of loads")
     st.write("**#-- separate with commas --#**")
     UDL_txt = st.text_input("Define UDL: UDL_start, UDL_end, x_start, x_end (+ = down)",
-                            value = "2, 15, 0, 10000")
+                            value = "1, 1, 0, 10000")
     point_list = st.text_input("List of point loads (+ = down)",
-                               value = "1000, 5200")
+                               value = "1000, 1000")
     point_loc_list = st.text_input("corresponding location(s) on beam (0 = left end)",
-                                   value = "5000, 7500")
+                                   value = "2500, 7500")
     subgrade_txt = st.text_input("Enter a list of subgrade moduli you would like to test",
-                                  value="0.1, 1, 5")
+                                  value="0.01, 0.1, 1")
     # User to choose number of springs to be supporting the grade beam
     n_springs = st.number_input("Enter the number of spring supports along length of beam", value=10)
 
@@ -44,8 +44,8 @@ input_sidebar = st.sidebar
 with input_sidebar:
     st.subheader("Member Parameters; Units = N, mm")
     L = st.number_input("Beam Length (mm)", value=10000)
-    w = st.number_input("Beam Width (mm)", value=200)
-    h = st.number_input("Beam Height (mm)", value=800)
+    w = st.number_input("Beam Width (mm)", value=1000)
+    h = st.number_input("Beam Height (mm)", value=1000)
     fc = st.number_input("Conc. Strength (MPa)", value=30)
     E = st.number_input("Elastic Modulus (MPa)", value=4500*math.sqrt(fc))
 
@@ -94,6 +94,7 @@ for mod in inputs["subgrade_mods"]:
 # st.write(gb_model.Members["M1"].DistLoads)
 st.write("springs are located in the centre of each section of beam; no supports at 0 and L, for pressure averaging")
 # st.write(sum([gb_model.Nodes[i].RxnFY["LC"] for i in gb_model.Nodes]))
+# st.write(Fy_rxns_dict)
 # Create the graph of base response
 fig = go.Figure()
 for mod, kPas in Fy_rxns_dict.items():
