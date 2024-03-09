@@ -78,36 +78,33 @@ beam_ppts = {   "mat": "Concrete",
                 "rho": rho,
                 "J": J}
 
-#loop through differnt subgrade moduli
+#loop through different subgrade moduli; save to dict
 Fy_rxns_dict = {}
 for mod in inputs["subgrade_mods"]:
-    gb_model, nodes = fdn.grade_beam(**beam_ppts, 
+    gb_model = fdn.grade_beam(**beam_ppts, 
                                       subgrade_modulus=mod, 
                                       n_springs=n_springs,
                                       UDL=inputs["UDL"], 
                                       pt_loads=point_list)
     gb_model.analyze() # Changes the model by performing the analysis and adding analysis results
-    
-    Fy_rxns = [] #populate reactions for each mod
-    for node in nodes:
-        Fy = round(gb_model.Nodes[node].RxnFY["LC"], 1)
-        Fy_rxns.append(Fy)
+    rxn_kPa, x_sup = fdn.grade_beam_post_process(gb_model, L, n_springs, w)
+    Fy_rxns_dict[mod] = rxn_kPa #update dict with corresponding pressures
 
-    Fy_rxns_dict[mod] = Fy_rxns #update dict with corresponding reactions
-
-# Create the graph of spring responses
+# explain beam support setup
+# st.write(gb_model.Members["M1"].DistLoads)
+st.write("springs are located in the centre of each section of beam; no supports at 0 and L, for pressure averaging")
+# st.write(sum([gb_model.Nodes[i].RxnFY["LC"] for i in gb_model.Nodes]))
+# Create the graph of base response
 fig = go.Figure()
-x_loc = [gb_model.Nodes[i].X for i in nodes]
-A_dx = L/(n_springs-1)*w
-for mod, rxns in Fy_rxns_dict.items():
+for mod, kPas in Fy_rxns_dict.items():
     fig.add_trace(go.Scatter(
-                x=x_loc,
-                y=rxns,
+                x=x_sup,
+                y=kPas,
                 mode='lines+markers',
                 name=mod))
 
 fig.layout.title.text = "Gradebeam on Springs Response to Loading"
-fig.layout.xaxis.title = "Position Along Gradebeam"
-fig.layout.yaxis.title = "Reaction at spring"
+fig.layout.xaxis.title = "Position Along Gradebeam (mm)"
+fig.layout.yaxis.title = "pressure under beam (kPa)"
 
 st.plotly_chart(fig)
