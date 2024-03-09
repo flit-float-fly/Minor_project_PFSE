@@ -1,13 +1,13 @@
 import math
 from PyNite import FEModel3D
-# from PyNite.Visualization import render_model
 from rich import print
 import pandas as pd
 import matplotlib.pyplot as plt
 import fdn_model as fdn
 import streamlit as st
 import plotly.graph_objects as go
-# from eng_module.utils import convert_to_numeric
+import fdn_utils as fu
+import planesections as ps
 
 st.header("Concrete Gradebeam Supported on Springs")
 
@@ -16,7 +16,7 @@ with beam_expander:
     st.subheader("Input values for different types of loads")
     st.write("**#-- separate with commas --#**")
     UDL_txt = st.text_input("Define UDL: UDL_start, UDL_end, x_start, x_end (+ = down)",
-                            value = "10, 15, 0, 10000")
+                            value = "2, 15, 0, 10000")
     point_list = st.text_input("List of point loads (+ = down)",
                                value = "1000, 5200")
     point_loc_list = st.text_input("corresponding location(s) on beam (0 = left end)",
@@ -33,14 +33,11 @@ with beam_expander:
               "point_locations": point_loc_list,
               "subgrade_mods": subgrade_txt} 
     
-    for name, values in inputs.items():
-        try:
-            input_converted = [float(num.strip()) for num in values.split(",")]
-            inputs[name] = input_converted #overwrite dict with new values
-        except ValueError:
-            st.write(f"Please enter a valid list for {name}")
+    inputs = fu.convert_line_to_float(inputs)
 
-
+    # display error if function sends error message
+    if type(inputs) == str:
+        st.write(inputs)
 
 # User can input material and beam properties in the sidebar 
 input_sidebar = st.sidebar
@@ -64,40 +61,10 @@ with input_sidebar:
 # Create tuples from point loads and locations
 point_list = list(zip(inputs["point_loads"], inputs["point_locations"]))
 
-# Create the beam visualization
-fig1 = go.Figure()
-xy_bm = {"name": 'Beam',
-         "x": [0,L],
-         "y": [0,0],
-         "mode": "lines",
-         "line": dict(color='black', width=5)}
-scale = max(1,point_list[0][0]/4)
-xy_UDL = {"name": f"UDL",
-         "x":inputs["UDL"][2:],
-         "y": [i*scale for i in inputs["UDL"][0:2]],
-         "mode": "lines",
-         "line": dict(color='grey', width=2)}
-
-traces = [xy_bm, xy_UDL]
-for trace in traces:
-    fig1.add_trace(go.Scatter(
-                x=trace["x"],
-                y=trace["y"],
-                mode=trace["mode"],
-                line=trace["line"],
-                name=trace["name"]))
-    
-for pt in point_list:
-    print(pt)
-    fig1.add_trace(go.Scatter(
-            x=[pt[1], pt[1]],
-            y=[pt[0], 0],
-            mode="lines+markers",
-            name=str(pt[0])))
-
-fig1.layout.title.text = "Gradebeam Loading diagram"
-
-st.plotly_chart(fig1)
+# Setup and plot beam visualization
+beam = fu.visualize_beam(L, inputs["UDL"], point_list)
+beam_image, ax = ps.plotBeamDiagram(beam, plotLabel=False, labelForce=True, plotForceValue=False)
+st.pyplot(beam_image)
 
 #compile properties for beam configuration
 beam_ppts = {   "mat": "Concrete",
@@ -131,6 +98,7 @@ for mod in inputs["subgrade_mods"]:
 # Create the graph of spring responses
 fig = go.Figure()
 x_loc = [gb_model.Nodes[i].X for i in nodes]
+A_dx = L/(n_springs-1)*w
 for mod, rxns in Fy_rxns_dict.items():
     fig.add_trace(go.Scatter(
                 x=x_loc,
