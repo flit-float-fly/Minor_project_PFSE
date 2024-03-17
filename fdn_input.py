@@ -9,6 +9,13 @@ import plotly.graph_objects as go
 import fdn_utils as fu
 import planesections as ps
 
+## TO DO:
+# - 2 Columns in expander for point loads + Locs & 
+# point moms + Locs
+# - radio button to allow for cracked section
+# - 2d plate analysis
+# 
+
 st.header("Concrete Gradebeam Supported on Springs")
 
 beam_expander = st.expander(label="**Loading & Support Input for beam**")
@@ -90,11 +97,10 @@ for mod in inputs["subgrade_mods"]:
     rxn_kPa, x_sup = fdn.grade_beam_post_process(gb_model, L, n_springs, w)
     Fy_rxns_dict[mod] = rxn_kPa #update dict with corresponding pressures
 
-# explain beam support setup
 # st.write(gb_model.Members["M1"].DistLoads)
-st.write("springs are located in the centre of each section of beam; no supports at 0 and L, for pressure averaging")
 # st.write(sum([gb_model.Nodes[i].RxnFY["LC"] for i in gb_model.Nodes]))
 # st.write(Fy_rxns_dict)
+    
 # Create the graph of base response
 fig = go.Figure()
 for mod, kPas in Fy_rxns_dict.items():
