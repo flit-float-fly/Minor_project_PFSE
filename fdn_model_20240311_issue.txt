@@ -1,6 +1,7 @@
 import math
 from rich import print
 from PyNite import FEModel3D
+# from PyNite.Visualization import render_model
 import numpy as np
 
 def grade_beam( mat: str,
@@ -36,6 +37,9 @@ def grade_beam( mat: str,
     spring_stiffness = subgrade_modulus * w * dx
     print(f"{spring_stiffness = :0.2f}N/mm")
     x_coords = list(np.linspace(0, L, n_springs))
+    # x_chunks = np.linspace(0, L, n_springs+1)
+    # x_supports = list((x_chunks[:-1] + x_chunks[1:]) / 2)
+    # x_coords = [0.0] + x_supports + [L]
     nodes = []
     node_id = 0
     for x in x_coords:
@@ -43,6 +47,9 @@ def grade_beam( mat: str,
         name = f"node{node_id}"
         nodes.append(name)
         model.add_node(name=name, X=x, Y=0.0, Z=0.0)
+        # if x in x_supports:
+        #     model.def_support(name, 1, 0, 1, 1, 0, 0)
+        #     model.def_support_spring(name, dof='DY', stiffness=spring_stiffness, direction='-') 
         model.def_support(name, 1, 0, 1, 1, 0, 0)
         model.def_support_spring(name, dof='DY', stiffness=spring_stiffness, direction='-') 
 
@@ -51,7 +58,7 @@ def grade_beam( mat: str,
     # Add a load combo
     model.add_load_combo(name="LC", factors={"LC": 1})
     # Add Distributed and Point loads
-    model.add_member_dist_load(member_name="M1", Direction="FY", w1=-UDL[0], w2=-UDL[1], x1=UDL[2], x2=UDL[3], case="LC") 
+    model.add_member_dist_load(Member="M1", Direction="FY", w1=-UDL[0], w2=-UDL[1], x1=UDL[2], x2=UDL[3], case="LC") 
     for pt in pt_loads:
         model.add_member_pt_load(Member="M1", Direction="FY", P=-pt[0] , x=pt[1], case="LC")
 
@@ -67,7 +74,10 @@ def grade_beam_post_process(model: FEModel3D, L: float, n_springs: float, w:floa
     kPa = []
     x_sup = []
     for node_name, node in model.Nodes.items():
-        kPa.append(node.RxnFY["LC"]/A_dx*1000)
+        if (node.X == 0.0) or (node.X == L):
+            kPa.append(node.RxnFY["LC"]/(A_dx)*1000) #end nodes have 1/2 the trib
+        else:
+            kPa.append(node.RxnFY["LC"]/A_dx*1000)
         x_sup.append(node.X)
 
     return kPa, x_sup
